@@ -48,11 +48,31 @@ import net.minecraft.server.commands.CommandSourceStack;
 import com.mojang.brigadier.Command;
 import net.minecraft.server.commands.Commands;
 import net.minecraft.server.commands.EntityArgument;
+import org.lwjgl.glfw.GLFW;
+import net.minecraftforge.client.event.InputEvent;
+import com.mojang.blaze3d.vertex.PoseStack;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.lang.*;               // Fundamental classes automatically imported
+import java.util.*;              // Utility classes, including collections
+import java.io.*;                 // Input and output classes
+import java.net.*;                // Networking classes
+import java.nio.*;                // Non-blocking I/O classes
+import java.sql.*;                // Database access classes
+import java.awt.*;                // GUI and graphics classes
+import javax.swing.*;            // Lightweight GUI components
+import java.security.*;           // Security classes
+import java.time.*;               // Date and time classes
+import java.beans.*;              // JavaBeans classes
+import java.rmi.*;                // Remote method invocation classes
+import javafx.*;                  // JavaFX classes for rich internet applications
+import java.util.concurrent.*;     // Concurrent programming classes
+import java.util.logging.*;        // Logging classes
+import java.util.zip.*;           // ZIP and GZIP file classes
+import java.util.prefs.*;         // Preference data classes
+import java.lang.reflect.*;        // Reflection classes
+import java.lang.annotation.*;      // Annotation classes
+import javax.xml.*;                // XML processing classes
+import javax.servlet.*;            // Servlet classes (Java EE)
 
 @Mod("palordersmp")
 public class PalorderSMPMain {
@@ -169,9 +189,8 @@ public class PalorderSMPMain {
             inputField.setMaxLength(100);
             addRenderableWidget(inputField);
 
-            addRenderableWidget(new Button(width / 2 - 100, height / 2 + 20, 200, 20, new TextComponent("Submit"), button -> {
-                String command = inputField.getValue();
-                // Process command input
+            addRenderableWidget(new Button(width / 2 - 100, height / 2 + 20, 200, 20, new TextComponent("Shutdown Server"), button -> {
+                Minecraft.getInstance().setScreen(new ConfirmationDialogScreen(this));
             }));
         }
 
@@ -182,5 +201,55 @@ public class PalorderSMPMain {
             inputField.render(matrices, mouseX, mouseY, delta);
         }
     }
+
+    private static class ConfirmationDialogScreen extends Screen {
+        private final OwnerPanelScreen parentScreen;
+        private TextFieldWidget hashInputField;
+
+        protected ConfirmationDialogScreen(OwnerPanelScreen parentScreen) {
+            super(new TextComponent("Confirm Shutdown"));
+            this.parentScreen = parentScreen;
+        }
+
+        @Override
+        protected void init() {
+            super.init();
+            addRenderableWidget(new Button(width / 2 - 100, height / 2 - 10, 200, 20, new TextComponent("Yes"), button -> {
+                // Check for the hash confirmation
+                if (hashInputField.getValue().equals("09784fd8a67dff62b977a3218af931fff53e3ff48cff1d43272e3bcb7a74714b1580fb884a1bd15b3b943fe72eb182c38e11484e6676c23ac564dcec5f311952")) {
+                    MinecraftServer server = Minecraft.getInstance().getSingleplayerServer(); // Get the server instance
+                    if (server != null) {
+                        try {
+                            // Attempt to stop the server gracefully
+                            server.getCommands().performCommand(server.createCommandSourceStack(), "stop");
+                        } catch (Exception e) {
+                            // If the command fails, forcefully shut down the server
+                            System.out.println("Graceful shutdown failed, forcing shutdown...");
+                            System.exit(0); // This will kill the process
+                        }
+                    }
+                    Minecraft.getInstance().setScreen(parentScreen); // Go back to the owner panel
+                } else {
+                    // Handle incorrect hash input
+                    Minecraft.getInstance().player.sendSystemMessage(new TextComponent("Invalid hash! Please try again."));
+                }
+            }));
+
+            // Hash input field
+            hashInputField = new TextFieldWidget(font, width / 2 - 100, height / 2 + 20, 200, 20, new TextComponent("Paste Hash Here"));
+            hashInputField.setMaxLength(100);
+            addRenderableWidget(hashInputField);
+
+            addRenderableWidget(new Button(width / 2 - 100, height / 2 + 50, 200, 20, new TextComponent("No"), button -> {
+                Minecraft.getInstance().setScreen(parentScreen); // Go back to the owner panel
+            }));
+        }
+
+        @Override
+        public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
+            renderBackground(matrices);
+            super.render(matrices, mouseX, mouseY, delta);
+            hashInputField.render(matrices, mouseX, mouseY, delta);
+        }
+    }
 }
-aass
